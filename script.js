@@ -1,260 +1,316 @@
-// ================= STATE =================
-
-let selectedGrade = null;
+// -------------------------
+// GLOBAL VARIABLES
+// -------------------------
+let currentGrade = null;
 let currentGame = null;
 let currentQuestionIndex = 0;
-let score = 0;
+let currentQuestions = [];
+const mascot = document.getElementById("mascot");
+const mascotBubble = document.getElementById("mascot-bubble");
+const mascotText = document.getElementById("mascot-text");
+const feedback = document.getElementById("feedback");
+const progressFill = document.getElementById("progress");
+const nextBtn = document.getElementById("next-btn");
+const gameContent = document.getElementById("game-content");
 
-// ================= SOUND =================
-
-function playSound(type) {
-    const sounds = {
-        correct: "sounds/correct.mp3",
-        wrong: "sounds/wrong.mp3",
-        win: "sounds/win.mp3"
-    };
-    if (sounds[type]) {
-        new Audio(sounds[type]).play();
+// -------------------------
+// DATA STRUCTURE FOR GAMES
+// -------------------------
+const gameData = {
+  K: [
+    {
+      title: "Letter Hunt",
+      type: "tap",
+      questions: [
+        {
+          prompt: "Tap all the letters 'a':",
+          letters: ["a","m","s","a","t","r","a"],
+          correct: ["a"]
+        },
+        {
+          prompt: "What is the first letter in the word 'sun'?",
+          options: ["s","u","n"],
+          correct: "s"
+        },
+        {
+          prompt: "Which letter makes the /m/ sound?",
+          options: ["m","n","b"],
+          correct: "m"
+        },
+        {
+          prompt: "Drag the correct letter to complete the word: _at",
+          options: ["c","b","d"],
+          correct: "c",
+          drag: true
+        },
+        {
+          prompt: "Which word begins with the same sound as 'ball'?",
+          options: ["bat","cat","dog"],
+          correct: "bat"
+        }
+      ]
+    },
+    {
+      title: "Rhyme Time",
+      type: "mcq",
+      questions: [
+        {prompt:"Which word rhymes with 'cat'?", options:["hat","hot","cut"], correct:"hat"},
+        {prompt:"Which word rhymes with 'sun'?", options:["fun","fan","pen"], correct:"fun"},
+        {prompt:"Tap the correct word for this picture (dog)", options:["dog","dig","dug"], correct:"dog"}
+      ]
+    },
+    {
+      title: "Mini Story Time",
+      type: "mcq",
+      questions: [
+        {prompt:"Read: 'The dog runs fast.' Who runs?", options:["dog","cat","boy"], correct:"dog"},
+        {prompt:"How does the dog run?", options:["slow","fast","sad"], correct:"fast"},
+        {prompt:"Read: 'The cat is on the bed.' Where is the cat?", options:["on the bed","under the bed","in the box"], correct:"on the bed"}
+      ]
     }
-}
-
-// ================= SCREEN CONTROL =================
-
-function showScreen(id) {
-    document.querySelectorAll(".screen").forEach(screen => {
-        screen.style.display = "none";
-    });
-    document.getElementById(id).style.display = "flex";
-}
-
-function goHome() { showScreen("start-screen"); }
-function goToLevelSelect() { showScreen("level-screen"); }
-
-// ================= LEVEL SELECT =================
-
-function selectLevel(level) {
-    selectedGrade = level;
-    document.getElementById("selected-grade-title").innerText =
-        "Select a Game - Grade " + level;
-
-    loadGamesForLevel(level);
-    showScreen("game-select-screen");
-}
-
-// ================= GAME DATABASE =================
-
-const gameDatabase = {
-
-K: [
-{
-title: "Letter Hunt",
-questions: [
-{ q:"Tap all the letters 'a': a m s a t r a", options:["3","2","4"], answer:"3" },
-{ q:"What is the first letter in 'sun'?", options:["s","u","n"], answer:"s"},
-{ q:"Which letter makes the /m/ sound?", options:["m","n","b"], answer:"m"},
-{ q:"Drag the correct letter: _at", options:["c","b","d"], answer:"c"},
-{ q:"Which word begins like 'ball'?", options:["bat","cat","dog"], answer:"bat"}
-]
-},
-{
-title:"Rhyme Time",
-questions:[
-{q:"Which word rhymes with 'cat'?",options:["hat","hot","cut"],answer:"hat"},
-{q:"Which word rhymes with 'sun'?",options:["fun","fan","pen"],answer:"fun"},
-{q:"Tap the correct word for 🐶",options:["dog","dig","dug"],answer:"dog"}
-]
-},
-{
-title:"Mini Story Time",
-questions:[
-{q:"The dog runs fast. Who runs?",options:["dog","cat","boy"],answer:"dog"},
-{q:"The dog runs fast. How does it run?",options:["slow","fast","sad"],answer:"fast"},
-{q:"The cat is on the bed. Where is the cat?",options:["on the bed","under the bed","in the box"],answer:"on the bed"}
-]
-}
-],
-
-1:[
-{
-title:"Sound Match",
-questions:[
-{q:"Same beginning sound as 'fish'?",options:["fan","ship","cat"],answer:"fan"},
-{q:"c _ p",options:["a","o","u"],answer:"a"},
-{q:"Rhymes with 'cake'?",options:["lake","kick","cup"],answer:"lake"},
-{q:"Correct spelling?",options:["jumpping","jumping","jumpng"],answer:"jumping"}
-]
-},
-{
-title:"Word Builder",
-questions:[
-{q:"s _ ow",options:["n","m","t"],answer:"n"},
-{q:"Correct sentence?",options:["The boy are happy.","The boy is happy.","The boy be happy."],answer:"The boy is happy."},
-{q:"Opposite of big?",options:["small","tall","long"],answer:"small"},
-{q:"The bird is ___ the tree.",options:["in","on","under"],answer:"in"}
-]
-},
-{
-title:"Story Detective",
-questions:[
-{q:"Tom throws something. What does he throw?",options:["ball","book","hat"],answer:"ball"},
-{q:"Who catches the ball?",options:["Ana","Tom","dog"],answer:"Ana"},
-{q:"Why does Ana smile?",options:["She caught the ball","She lost the ball","She is tired"],answer:"She caught the ball"},
-{q:"What color is the ball?",options:["red","blue","green"],answer:"red"}
-]
-}
-],
-
-2:[
-{
-title:"Blend Builder",
-questions:[
-{q:"Which word has a consonant blend?",options:["frog","cat","sun"],answer:"frog"},
-{q:"Which word has long vowel?",options:["rain","hat","cap"],answer:"rain"},
-{q:"Correct spelling?",options:["flight","flite","fligth"],answer:"flight"},
-{q:"b _ _ k",options:["oa","ai","ee"],answer:"oa"}
-]
-},
-{
-title:"Word Lab",
-questions:[
-{q:"Meaning of ancient?",options:["very old","new","small"],answer:"very old"},
-{q:"Opposite of happy?",options:["sad","tall","loud"],answer:"sad"},
-{q:"The dog ___ loudly.",options:["bark","barks","barking"],answer:"barks"},
-{q:"Rhymes with moon?",options:["spoon","sun","man"],answer:"spoon"}
-]
-},
-{
-title:"Story Explorer",
-questions:[
-{q:"Where did Anna go?",options:["park","school","home"],answer:"park"},
-{q:"What were ducks doing?",options:["swimming","sleeping","flying"],answer:"swimming"},
-{q:"What did she feed them?",options:["bread","rice","corn"],answer:"bread"},
-{q:"Why did Anna go?",options:["To sleep","To play","To cry"],answer:"To play"}
-]
-}
-],
-
-3:[
-{
-title:"Word Detectives",
-questions:[
-{q:"Word with silent letter?",options:["knee","run","dog"],answer:"knee"},
-{q:"Word with vowel team?",options:["boat","cat","hat"],answer:"boat"},
-{q:"Correct spelling?",options:["knight","nite","nit"],answer:"knight"},
-{q:"pl _ _ ne",options:["ai","ee","oa"],answer:"ai"}
-]
-},
-{
-title:"Vocabulary Quest",
-questions:[
-{q:"Meaning of enormous?",options:["very big","tiny","slow"],answer:"very big"},
-{q:"Antonym of ancient?",options:["modern","old","dusty"],answer:"modern"},
-{q:"She ___ her homework.",options:["finished","finish","finishing"],answer:"finished"},
-{q:"He was ___ to win.",options:["eager","lazy","weak"],answer:"eager"}
-]
-},
-{
-title:"Reading Adventure",
-questions:[
-{q:"How did the rabbit move?",options:["quickly","slowly","sadly"],answer:"quickly"},
-{q:"Where did it find carrot?",options:["near the fence","in house","in sky"],answer:"near the fence"},
-{q:"Why was rabbit happy?",options:["It ate carrot","It slept","It ran"],answer:"It ate carrot"},
-{q:"Main idea?",options:["Rabbit finds and eats carrot","Rabbit is tired","Garden is big"],answer:"Rabbit finds and eats carrot"}
-]
-}
-]
-
+  ],
+  1: [
+    {
+      title:"Sound Match",
+      type:"mcq",
+      questions:[
+        {prompt:"Which word begins with the same sound as 'fish'?", options:["fan","ship","cat"], correct:"fan"},
+        {prompt:"Fill in the missing letter: c _ p", options:["a","o","u"], correct:"a"},
+        {prompt:"Which word rhymes with 'cake'?", options:["lake","kick","cup"], correct:"lake"},
+        {prompt:"Choose the correct spelling", options:["jumpping","jumping","jumpng"], correct:"jumping"}
+      ]
+    },
+    {
+      title:"Word Builder",
+      type:"drag",
+      questions:[
+        {prompt:"Complete the word: s _ ow", options:["n","m","t"], correct:"n", drag:true},
+        {prompt:"Choose the correct sentence", options:["The boy are happy.","The boy is happy.","The boy be happy."], correct:"The boy is happy."},
+        {prompt:"Opposite of 'big'?", options:["small","tall","long"], correct:"small"},
+        {prompt:"'The bird is ___ the tree.'", options:["in","on","under"], correct:"on"}
+      ]
+    },
+    {
+      title:"Story Detective",
+      type:"mcq",
+      questions:[
+        {prompt:"Read: 'Tom has a red ball. He throws it to Ana. Ana catches the ball and smiles.' What does Tom throw?", options:["ball","cat","book"], correct:"ball"},
+        {prompt:"Who catches the ball?", options:["Ana","Tom","Dog"], correct:"Ana"},
+        {prompt:"Why does Ana smile?", options:["She caught the ball","She lost the ball","She is tired"], correct:"She caught the ball"},
+        {prompt:"What color is the ball?", options:["red","blue","yellow"], correct:"red"}
+      ]
+    }
+  ],
+  2: [
+    {
+      title:"Blend Builder",
+      type:"mcq",
+      questions:[
+        {prompt:"Which word has a consonant blend?", options:["frog","cat","sun"], correct:"frog"},
+        {prompt:"Which word has a long vowel sound?", options:["rain","hat","cap"], correct:"rain"},
+        {prompt:"Choose the correct spelling", options:["flight","flite","fligth"], correct:"flight"},
+        {prompt:"Fill in the blank: b _ _ k", options:["oa","ai","ee"], correct:"oa"}
+      ]
+    },
+    {
+      title:"Word Lab",
+      type:"mcq",
+      questions:[
+        {prompt:"What does 'ancient' mean?", options:["very old","new","small"], correct:"very old"},
+        {prompt:"Opposite of 'happy'?", options:["sad","tall","loud"], correct:"sad"},
+        {prompt:"Choose the correct verb: 'The dog ___ loudly.'", options:["bark","barks","barking"], correct:"barks"},
+        {prompt:"Which word rhymes with 'moon'?", options:["spoon","sun","man"], correct:"spoon"}
+      ]
+    },
+    {
+      title:"Story Explorer",
+      type:"mcq",
+      questions:[
+        {prompt:"Read: 'Anna went to the park. She saw ducks swimming in the pond. She fed them bread.' Where did Anna go?", options:["park","school","home"], correct:"park"},
+        {prompt:"What were the ducks doing?", options:["swimming","flying","sleeping"], correct:"swimming"},
+        {prompt:"What did Anna feed the ducks?", options:["bread","fish","corn"], correct:"bread"},
+        {prompt:"Why did Anna go to the park?", options:["To play","To sleep","To cry"], correct:"To play"}
+      ]
+    }
+  ],
+  3: [
+    {
+      title:"Word Detectives",
+      type:"mcq",
+      questions:[
+        {prompt:"Which word has a silent letter?", options:["knee","run","dog"], correct:"knee"},
+        {prompt:"Which word has a vowel team?", options:["boat","cat","hat"], correct:"boat"},
+        {prompt:"Choose the correct spelling", options:["knight","nite","nit"], correct:"knight"},
+        {prompt:"Fill in the blank: pl _ _ ne", options:["ai","ee","oa"], correct:"oa"}
+      ]
+    },
+    {
+      title:"Vocabulary Quest",
+      type:"mcq",
+      questions:[
+        {prompt:"What does 'enormous' mean?", options:["very big","tiny","slow"], correct:"very big"},
+        {prompt:"Antonym of 'ancient'?", options:["modern","old","dusty"], correct:"modern"},
+        {prompt:"'She ___ her homework before dinner.'", options:["finished","finish","finishing"], correct:"finished"},
+        {prompt:"Choose the correct word: 'He was ___ to win the race.'", options:["eager","lazy","weak"], correct:"eager"}
+      ]
+    },
+    {
+      title:"Reading Adventure",
+      type:"mcq",
+      questions:[
+        {prompt:"Read: 'The rabbit hopped quickly across the garden. It found a carrot near the fence. It ate the carrot happily and rested under a tree.' How did the rabbit move?", options:["quickly","slowly","sadly"], correct:"quickly"},
+        {prompt:"Where did it find the carrot?", options:["near the fence","under the tree","on the hill"], correct:"near the fence"},
+        {prompt:"Why was the rabbit happy?", options:["it ate the carrot","it lost the carrot","it was tired"], correct:"it ate the carrot"},
+        {prompt:"What is the main idea of the passage?", options:["rabbit found carrot and was happy","garden is big","rabbit sleeps a lot"], correct:"rabbit found carrot and was happy"}
+      ]
+    }
+  ]
 };
 
-// ================= LOAD GAMES =================
-
-function loadGamesForLevel(level){
-const grid=document.getElementById("game-grid");
-grid.innerHTML="";
-gameDatabase[level].forEach((game,i)=>{
-const card=document.createElement("div");
-card.className="level-card";
-card.innerHTML=`<span class="level-icon">🎮</span><span class="level-title">${game.title}</span>`;
-card.onclick=()=>startGame(i);
-grid.appendChild(card);
-});
+// -------------------------
+// SCREEN NAVIGATION
+// -------------------------
+function goToLevelSelect(){
+  showScreen("level-screen");
+  showMascotText("Pick your grade to start!");
 }
 
-// ================= START GAME =================
-
-function startGame(index){
-currentGame=gameDatabase[selectedGrade][index];
-currentQuestionIndex=0;
-score=0;
-showScreen("gameplay-screen");
-loadQuestion();
+function selectLevel(grade){
+  currentGrade = grade;
+  populateGameSelect();
+  showScreen("game-select-screen");
+  showMascotText("Choose a game! Let's play!");
 }
 
-// ================= LOAD QUESTION =================
-
-function loadQuestion(){
-const container=document.getElementById("game-content");
-container.innerHTML="";
-const data=currentGame.questions[currentQuestionIndex];
-
-document.getElementById("game-title-display").innerText=currentGame.title;
-
-const q=document.createElement("h3");
-q.innerText=data.q;
-container.appendChild(q);
-
-const shuffled=[...data.options].sort(()=>Math.random()-0.5);
-
-shuffled.forEach(opt=>{
-const btn=document.createElement("button");
-btn.className="option-btn";
-btn.innerText=opt;
-btn.onclick=()=>checkAnswer(opt);
-container.appendChild(btn);
-});
-
-document.getElementById("feedback").innerText="";
-document.getElementById("next-btn").style.display="none";
-updateProgress();
+function goHome(){
+  showScreen("start-screen");
 }
 
-// ================= CHECK ANSWER =================
-
-function checkAnswer(selected){
-const correct=currentGame.questions[currentQuestionIndex].answer;
-const buttons=document.querySelectorAll(".option-btn");
-
-buttons.forEach(btn=>{
-btn.disabled=true;
-if(btn.innerText===correct)btn.style.backgroundColor="#4CAF50";
-else if(btn.innerText===selected)btn.style.backgroundColor="#f44336";
-});
-
-if(selected===correct){
-score++;
-playSound("correct");
-document.getElementById("feedback").innerText="Correct!";
-}else{
-playSound("wrong");
-document.getElementById("feedback").innerText="Try again!";
+function populateGameSelect(){
+  const grid = document.getElementById("game-grid");
+  grid.innerHTML = "";
+  gameData[currentGrade].forEach((game,index)=>{
+    const div = document.createElement("div");
+    div.className = "game-card";
+    div.innerHTML = `<span class="game-title">${game.title}</span>`;
+    div.onclick = ()=>startGame(index);
+    grid.appendChild(div);
+  });
+  document.getElementById("selected-grade-title").textContent = `Grade ${currentGrade} Games`;
 }
 
-document.getElementById("next-btn").style.display="inline-block";
+function startGame(gameIndex){
+  currentGame = gameIndex;
+  currentQuestionIndex = 0;
+  currentQuestions = gameData[currentGrade][currentGame].questions;
+  document.getElementById("game-title-display").textContent = gameData[currentGrade][currentGame].title;
+  progressFill.style.width = "0%";
+  showQuestion();
+  showScreen("gameplay-screen");
 }
 
-// ================= NEXT =================
+// -------------------------
+// SHOW QUESTIONS
+// -------------------------
+function showQuestion(){
+  feedback.textContent = "";
+  nextBtn.style.display = "none";
+  gameContent.innerHTML = "";
+  const q = currentQuestions[currentQuestionIndex];
 
+  const prompt = document.createElement("div");
+  prompt.style.fontSize="1.4rem";
+  prompt.style.textAlign="center";
+  prompt.textContent = q.prompt;
+  gameContent.appendChild(prompt);
+
+  // TAP LETTERS
+  if(q.letters){
+    const grid = document.createElement("div");
+    grid.className = "letter-grid";
+    q.letters.forEach(l=>{
+      const btn = document.createElement("button");
+      btn.className = "letter-tile";
+      btn.textContent = l;
+      btn.onclick = ()=>checkTapLetter(btn,l,q.correct);
+      grid.appendChild(btn);
+    });
+    gameContent.appendChild(grid);
+  }
+
+  // OPTIONS MCQ
+  if(q.options){
+    const grid = document.createElement("div");
+    grid.className = "options-grid";
+    q.options.forEach(opt=>{
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.textContent = opt;
+      btn.onclick = ()=>checkAnswer(opt,q.correct,btn);
+      grid.appendChild(btn);
+    });
+    gameContent.appendChild(grid);
+  }
+}
+
+// -------------------------
+// TAP LETTER LOGIC
+// -------------------------
+function checkTapLetter(btn,letter,correctLetters){
+  btn.classList.toggle("selected");
+  const selected = Array.from(document.querySelectorAll(".letter-tile.selected")).map(b=>b.textContent);
+  selected.sort();
+  correctLetters.sort();
+  if(selected.length===correctLetters.length && selected.every((v,i)=>v===correctLetters[i])){
+    feedback.textContent = "✅ Great job!";
+    nextBtn.style.display = "block";
+  } else {
+    feedback.textContent = "";
+  }
+}
+
+// -------------------------
+// MCQ LOGIC
+// -------------------------
+function checkAnswer(answer,correct,btn){
+  if(answer===correct){
+    feedback.textContent = "✅ Correct!";
+  } else {
+    feedback.textContent = "❌ Try again!";
+    btn.classList.add("shake");
+    setTimeout(()=>btn.classList.remove("shake"),300);
+    return;
+  }
+  nextBtn.style.display = "block";
+}
+
+// -------------------------
+// NEXT QUESTION
+// -------------------------
 function nextQuestion(){
-currentQuestionIndex++;
-if(currentQuestionIndex>=currentGame.questions.length){
-playSound("win");
-showScreen("end-screen");
-}else{
-loadQuestion();
-}
+  currentQuestionIndex++;
+  const percent = Math.round((currentQuestionIndex/currentQuestions.length)*100);
+  progressFill.style.width = percent+"%";
+  if(currentQuestionIndex>=currentQuestions.length){
+    showScreen("end-screen");
+    showMascotText("You did it! 🎉");
+    return;
+  }
+  showQuestion();
 }
 
-function updateProgress(){
-const percent=(currentQuestionIndex/currentGame.questions.length)*100;
-document.getElementById("progress").style.width=percent+"%";
+// -------------------------
+// UTILS
+// -------------------------
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function showMascotText(text){
+  mascotText.textContent = text;
+  mascotBubble.classList.add("show");
+  mascot.classList.add("waving");
+  setTimeout(()=>mascotBubble.classList.remove("show"),4000);
+  setTimeout(()=>mascot.classList.remove("waving"),4000);
 }
